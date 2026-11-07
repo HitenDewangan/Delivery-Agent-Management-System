@@ -1,6 +1,7 @@
 type LogLevel = 'info' | 'warn' | 'error';
 
 function log(level: LogLevel, message: string, meta?: Record<string, unknown>): void {
+  if (process.env.NODE_ENV === 'test') return; // keep test output readable
   const entry = { level, time: new Date().toISOString(), message, ...meta };
   const line = JSON.stringify(entry);
   if (level === 'error') console.error(line);

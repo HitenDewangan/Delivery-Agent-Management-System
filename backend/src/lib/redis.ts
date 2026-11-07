@@ -6,6 +6,9 @@ export const redis = new Redis(env.REDIS_URL, {
   lazyConnect: true,
   maxRetriesPerRequest: 1,
   connectTimeout: 3000,
+  // Fail fast instead of queueing commands while Redis is down; callers fall back to PostgreSQL.
+  enableOfflineQueue: false,
+  commandTimeout: 1000,
   retryStrategy: (times) => Math.min(times * 200, 2000),
 });
 

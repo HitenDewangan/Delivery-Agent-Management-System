@@ -1,17 +1,52 @@
 import type { NextFunction, Request, Response } from 'express';
+import { ZodError } from 'zod';
 import { logger } from '../lib/logger';
+import { AppError } from '../utils/errors';
 
-export function notFoundHandler(req: Request, res: Response): void {
-  res.status(404).json({
+function sendError(
+  res: Response,
+  status: number,
+  code: string,
+  message: string,
+  details?: unknown,
+) {
+  res.status(status).json({
     success: false,
-    error: { code: 'NOT_FOUND', message: `Route ${req.method} ${req.originalUrl} not found` },
+    error: { code, message, ...(details !== undefined ? { details } : {}) },
   });
 }
 
-export function errorHandler(err: Error, _req: Request, res: Response, _next: NextFunction): void {
-  logger.error('Unhandled error', { error: err.message, stack: err.stack });
-  res.status(500).json({
-    success: false,
-    error: { code: 'INTERNAL_SERVER_ERROR', message: 'Something went wrong' },
-  });
+export function notFoundHandler(req: Request, res: Response): void {
+  sendError(res, 404, 'NOT_FOUND', `Route ${req.method} ${req.originalUrl} not found`);
+}
+
+export function errorHandler(
+  err: unknown,
+  _req: Request,
+  res: Response,
+  _next: NextFunction,
+): void {
+  if (err instanceof ZodError) {
+    const details = err.issues.map((issue) => ({
+      field: issue.path.join('.'),
+      message: issue.message,
+    }));
+    return sendError(res, 400, 'VALIDATION_ERROR', 'Request validation failed', details);
+  }
+
+  if (err instanceof AppError) {
+    return sendError(res, err.statusCode, err.code, err.message, err.details);
+  }
+
+  // body-parser errors (malformed JSON, payload too large) carry an HTTP status.
+  const status = (err as { status?: unknown }).status;
+  const type = (err as { type?: unknown }).type;
+  if (typeof status === 'number' && status >= 400 && status < 500 && typeof type === 'string') {
+    const message = type === 'entity.parse.failed' ? 'Malformed JSON body' : 'Invalid request body';
+    return sendError(res, status, 'BAD_REQUEST', message);
+  }
+
+  const error = err instanceof Error ? err : new Error(String(err));
+  logger.error('Unhandled error', { error: error.message, stack: error.stack });
+  sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Something went wrong');
 }
