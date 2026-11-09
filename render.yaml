@@ -1,0 +1,23 @@
+# Render Blueprint for the API (free plan). Frontend lives on Vercel; Postgres on Neon; Redis on Upstash.
+services:
+  - type: web
+    name: delivery-agent-api
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: backend
+    # --include=dev: the build needs typescript and prisma, which are devDependencies.
+    # migrate deploy applies pending migrations to the database before the new version starts.
+    buildCommand: npm install --include=dev && npm run build && npx prisma migrate deploy
+    startCommand: npm start
+    healthCheckPath: /ping
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false

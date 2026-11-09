@@ -235,3 +235,9 @@ npm run typecheck                                          # type checks src and
 - **Frontend shows "Cannot reach the server"** – start the backend and check `NEXT_PUBLIC_API_URL`
   and `CORS_ORIGIN`.
 - **Redis stopped** – the app keeps working from PostgreSQL; `/health` reports `degraded`.
+
+## Deployment
+
+A free setup (Vercel + Render + Neon + Upstash) is described step by step in
+[DEPLOYMENT.md](DEPLOYMENT.md). The API exposes `GET /ping` (no dependencies) for uptime
+monitors and `GET /health` (checks PostgreSQL and Redis).

@@ -210,3 +210,21 @@ describe('error handling', () => {
     expect(res.body.success).toBe(false);
   });
 });
+
+describe('GET /ping', () => {
+  it('answers 200 without touching the database or Redis', async () => {
+    const res = await request(app).get('/ping');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ status: 'ok' });
+  });
+});
+
+describe('CORS', () => {
+  it('allows the configured origin and not others', async () => {
+    const allowed = await request(app).get('/ping').set('Origin', 'http://localhost:3000');
+    expect(allowed.headers['access-control-allow-origin']).toBe('http://localhost:3000');
+
+    const other = await request(app).get('/ping').set('Origin', 'https://evil.example');
+    expect(other.headers['access-control-allow-origin']).toBeUndefined();
+  });
+});
