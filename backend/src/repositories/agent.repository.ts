@@ -12,8 +12,14 @@ import { translatePrismaError } from '../utils/prisma-errors';
 
 // Prisma treats `undefined` as "leave unchanged", but with exactOptionalPropertyTypes
 // we drop undefined keys explicitly so intent is obvious and types stay strict.
-function definedOnly<T extends object>(data: T): T {
-  return Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined)) as T;
+type Defined<T> = {
+  [K in keyof T]: Exclude<T[K], undefined>;
+};
+
+function definedOnly<T extends object>(data: T): Defined<T> {
+  return Object.fromEntries(
+    Object.entries(data).filter(([, value]) => value !== undefined)
+  ) as Defined<T>;
 }
 
 function buildWhere({ search, status, serviceArea }: AgentFilters): Prisma.AgentWhereInput {
